@@ -8,6 +8,7 @@ import variationsRoutes from './variations.routes.js';
 import customersRoutes from './customers.routes.js';
 import ordersRoutes from './orders.routes.js';
 import uploadRoutes from './upload.routes.js';
+import salesRoutes from './sales.routes.js';
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use('/variations', variationsRoutes);
 router.use('/customers', customersRoutes);
 router.use('/orders', ordersRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/sales', salesRoutes);
 
 export default router;

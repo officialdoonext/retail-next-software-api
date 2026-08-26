@@ -1,5 +1,5 @@
 import express from 'express';
-import { getCustomers, getCustomerById, createCustomer, updateCustomer } from '../controllers/customers.controller.js';
+import { getSales, createSale, getDrafts, deleteDraft } from '../controllers/sales.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireActiveBusiness } from '../middlewares/businessGuard.middleware.js';
 
@@ -8,9 +8,9 @@ const router = express.Router();
 router.use(authenticate);
 router.use(requireActiveBusiness);
 
-router.get('/', getCustomers);
-router.get('/:id', getCustomerById);
-router.post('/', createCustomer);
-router.put('/:id', updateCustomer);
+router.get('/', getSales);
+router.post('/', createSale);
+router.get('/drafts', getDrafts);
+router.delete('/drafts/:id', deleteDraft);
 
 export default router;

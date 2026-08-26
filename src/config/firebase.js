@@ -1,4 +1,6 @@
-import admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth } from 'firebase-admin/auth';
 import { config } from './index.js';
 
 let firebaseApp = null;
@@ -7,21 +9,27 @@ let auth = null;
 
 try {
   if (config.firebase.projectId && config.firebase.clientEmail && config.firebase.privateKey) {
-    if (!admin.apps.length) {
-      firebaseApp = admin.initializeApp({
-        credential: admin.credential.cert({
+    const apps = getApps();
+    if (!apps.length) {
+      let cleanedKey = config.firebase.privateKey;
+      if (typeof cleanedKey === 'string') {
+        cleanedKey = cleanedKey.replace(/^"(.*)"$/, '$1').replace(/\\n/g, '\n');
+      }
+
+      firebaseApp = initializeApp({
+        credential: cert({
           projectId: config.firebase.projectId,
           clientEmail: config.firebase.clientEmail,
-          privateKey: config.firebase.privateKey
+          privateKey: cleanedKey
         })
       });
       console.log('🔥 Firebase Admin SDK initialized successfully!');
     } else {
-      firebaseApp = admin.app();
+      firebaseApp = apps[0];
     }
 
-    db = admin.firestore();
-    auth = admin.auth();
+    db = getFirestore(firebaseApp);
+    auth = getAuth(firebaseApp);
   } else {
     console.warn('⚠️ Firebase credentials not fully configured in environment variables.');
   }
@@ -29,5 +37,5 @@ try {
   console.error('❌ Failed to initialize Firebase Admin SDK:', error.message);
 }
 
-export { admin, firebaseApp, db, auth };
-export default admin;
+export { firebaseApp, db, auth };
+export default db;

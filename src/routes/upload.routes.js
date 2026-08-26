@@ -1,9 +1,9 @@
-import { Router } from 'express';
-import { getUploadAuth } from '../controllers/upload.controller.js';
+import express from 'express';
+import { getUploadAuth, uploadFile } from '../controllers/upload.controller.js';
 
-const router = Router();
+const router = express.Router();
 
-// GET /api/v1/upload/auth - For client-side image uploading to ImageKit
 router.get('/auth', getUploadAuth);
+router.post('/', uploadFile);
 
 export default router;

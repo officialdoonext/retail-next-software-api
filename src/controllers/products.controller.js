@@ -1,135 +1,129 @@
-import { products, categories } from '../data/mockData.js';
+import { db } from '../config/firebase.js';
+import { generateUniqueBarcode } from '../utils/security.js';
 
-let productStore = [...products];
+export const getProducts = async (req, res) => {
+  try {
+    const businessId = req.business.id;
+    const snapshot = await db.collection('products').where('businessId', '==', businessId).get();
+    
+    const list = [];
+    snapshot.forEach(doc => {
+      list.push({ id: doc.id, ...doc.data() });
+    });
 
-// Get all products with optional query filtering & search
-export const getProducts = (req, res) => {
-  const { search, categoryId, status } = req.query;
-
-  let filtered = [...productStore];
-
-  if (search) {
-    const q = search.toLowerCase();
-    filtered = filtered.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      (p.barcode && p.barcode.includes(q))
-    );
+    return res.status(200).json({
+      success: true,
+      count: list.length,
+      data: list
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch products from database', error: error.message });
   }
-
-  if (categoryId) {
-    filtered = filtered.filter(p => p.categoryId === categoryId);
-  }
-
-  if (status) {
-    filtered = filtered.filter(p => p.status.toLowerCase() === status.toLowerCase());
-  }
-
-  res.status(200).json({
-    success: true,
-    count: filtered.length,
-    data: filtered
-  });
 };
 
-// Get product by ID or Barcode
-export const getProductById = (req, res) => {
-  const { id } = req.params;
-  const product = productStore.find(p => p.id === id || p.barcode === id);
+export const createProduct = async (req, res) => {
+  try {
+    const businessId = req.business.id;
+    const {
+      name,
+      sku,
+      category,
+      brand,
+      unit = 'Kg',
+      sellingPrice = 0,
+      costPrice = 0,
+      stock = 0,
+      bufferStock = 5,
+      status = 'Active',
+      image = '',
+      barcode,
+      hasVariations = false,
+      variations = []
+    } = req.body;
 
-  if (!product) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID or barcode '${id}' not found`
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'Product name is required' });
+    }
+
+    const prodId = `prod_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const mainBarcode = barcode && String(barcode).trim() ? String(barcode).trim() : generateUniqueBarcode();
+
+    const processedVariations = hasVariations && Array.isArray(variations)
+      ? variations.map((v, idx) => ({
+          id: v.id || `var_opt_${Date.now()}_${idx}`,
+          name: v.name || 'Option',
+          optionValue: v.optionValue || '',
+          sellingPrice: Number(v.sellingPrice) || Number(sellingPrice),
+          costPrice: Number(v.costPrice) || Number(costPrice),
+          stock: Number(v.stock) || 0,
+          bufferStock: Number(v.bufferStock) || Number(bufferStock),
+          barcode: v.barcode && String(v.barcode).trim() ? String(v.barcode).trim() : generateUniqueBarcode(),
+          status: v.status || 'Active'
+        }))
+      : [];
+
+    const newProduct = {
+      id: prodId,
+      businessId,
+      name,
+      sku: sku || `PRD-${Math.floor(1000 + Math.random() * 9000)}`,
+      category: category || 'General',
+      brand: brand || 'General',
+      unit,
+      sellingPrice: Number(sellingPrice),
+      costPrice: Number(costPrice),
+      stock: hasVariations && processedVariations.length > 0
+        ? processedVariations.reduce((s, v) => s + v.stock, 0)
+        : Number(stock),
+      bufferStock: Number(bufferStock),
+      status: Number(stock) > 0 || (hasVariations && processedVariations.some(v => v.stock > 0)) ? status : 'Out of Stock',
+      image,
+      barcode: mainBarcode,
+      hasVariations: Boolean(hasVariations),
+      variations: processedVariations,
+      addedOn: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      createdAt: new Date().toISOString()
+    };
+
+    await db.collection('products').doc(prodId).set(newProduct);
+
+    return res.status(201).json({
+      success: true,
+      message: 'Product stored in Firebase Firestore successfully',
+      data: newProduct
     });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to create product in database', error: error.message });
   }
-
-  res.status(200).json({
-    success: true,
-    data: product
-  });
 };
 
-// Create a new product
-export const createProduct = (req, res) => {
-  const { name, categoryId, sellingPrice, mrp, costPrice, stock, barcode, unit, taxRate } = req.body;
-
-  if (!name || !sellingPrice) {
-    return res.status(400).json({
-      success: false,
-      message: 'Product name and sellingPrice are required fields.'
+export const updateProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const docRef = db.collection('products').doc(id);
+    
+    await docRef.update({
+      ...req.body,
+      updatedAt: new Date().toISOString()
     });
+
+    const doc = await docRef.get();
+    return res.status(200).json({
+      success: true,
+      message: 'Product updated in Firebase successfully',
+      data: { id: doc.id, ...doc.data() }
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to update product in database', error: error.message });
   }
-
-  const category = categories.find(c => c.id === categoryId);
-
-  const newProduct = {
-    id: `prod-${Date.now()}`,
-    barcode: barcode || `${Date.now()}`,
-    name,
-    categoryId: categoryId || 'cat-1',
-    categoryName: category ? category.name : 'General',
-    mrp: Number(mrp) || Number(sellingPrice),
-    sellingPrice: Number(sellingPrice),
-    costPrice: Number(costPrice) || 0,
-    stock: Number(stock) || 0,
-    unit: unit || 'pcs',
-    taxRate: Number(taxRate) || 0,
-    status: 'ACTIVE',
-    createdAt: new Date().toISOString()
-  };
-
-  productStore.push(newProduct);
-
-  res.status(201).json({
-    success: true,
-    message: 'Product created successfully',
-    data: newProduct
-  });
 };
 
-// Update an existing product
-export const updateProduct = (req, res) => {
-  const { id } = req.params;
-  const index = productStore.findIndex(p => p.id === id);
-
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID '${id}' not found`
-    });
+export const deleteProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.collection('products').doc(id).delete();
+    return res.status(200).json({ success: true, message: 'Product deleted from Firebase Firestore successfully' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to delete product from database', error: error.message });
   }
-
-  const updatedProduct = {
-    ...productStore[index],
-    ...req.body,
-    id: productStore[index].id, // Prevent overwriting ID
-    updatedAt: new Date().toISOString()
-  };
-
-  productStore[index] = updatedProduct;
-
-  res.status(200).json({
-    success: true,
-    message: 'Product updated successfully',
-    data: updatedProduct
-  });
-};
-
-// Delete a product
-export const deleteProduct = (req, res) => {
-  const { id } = req.params;
-  const initialLength = productStore.length;
-  productStore = productStore.filter(p => p.id !== id);
-
-  if (productStore.length === initialLength) {
-    return res.status(404).json({
-      success: false,
-      message: `Product with ID '${id}' not found`
-    });
-  }
-
-  res.status(200).json({
-    success: true,
-    message: `Product '${id}' deleted successfully`
-  });
 };

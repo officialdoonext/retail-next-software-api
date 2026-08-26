@@ -12,15 +12,15 @@ const app = express();
 // Security Middlewares
 app.use(helmet());
 app.use(cors({
-  origin: config.corsOrigin === '*' ? '*' : config.corsOrigin.split(','),
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-business-id', 'X-Business-Id']
 }));
 
-// Request Logging & Parsing
+// Request Logging & Large Body Parsing (for ImageKit uploads)
 app.use(morgan(config.nodeEnv === 'development' ? 'dev' : 'combined'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '30mb' }));
+app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 // Root welcome route
 app.get('/', (req, res) => {

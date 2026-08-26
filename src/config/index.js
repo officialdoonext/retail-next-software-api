@@ -18,5 +18,9 @@ export const config = {
     publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
     privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
     urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT
+  },
+  descope: {
+    projectId: process.env.DESCOPE_PROJECT_ID || '',
+    managementKey: process.env.DESCOPE_MANAGEMENT_KEY || ''
   }
 };

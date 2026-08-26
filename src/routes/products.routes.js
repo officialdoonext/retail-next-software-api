@@ -1,5 +1,11 @@
 import express from 'express';
-import { getProducts, createProduct, updateProduct, deleteProduct } from '../controllers/products.controller.js';
+import {
+  getProducts,
+  createProduct,
+  bulkCreateProducts,
+  updateProduct,
+  deleteProduct
+} from '../controllers/products.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireActiveBusiness } from '../middlewares/businessGuard.middleware.js';
 
@@ -10,6 +16,7 @@ router.use(requireActiveBusiness);
 
 router.get('/', getProducts);
 router.post('/', createProduct);
+router.post('/bulk', bulkCreateProducts);
 router.put('/:id', updateProduct);
 router.delete('/:id', deleteProduct);
 

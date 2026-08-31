@@ -11,6 +11,7 @@ import uploadRoutes from './upload.routes.js';
 import salesRoutes from './sales.routes.js';
 import vendorsRoutes from './vendors.routes.js';
 import purchasesRoutes from './purchases.routes.js';
+import expensesRoutes from './expenses.routes.js';
 
 const router = express.Router();
 
@@ -26,5 +27,7 @@ router.use('/upload', uploadRoutes);
 router.use('/sales', salesRoutes);
 router.use('/vendors', vendorsRoutes);
 router.use('/purchases', purchasesRoutes);
+router.use('/expenses', expensesRoutes);
+router.use('/investments', expensesRoutes);
 
 export default router;

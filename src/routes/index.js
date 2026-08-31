@@ -12,6 +12,7 @@ import salesRoutes from './sales.routes.js';
 import vendorsRoutes from './vendors.routes.js';
 import purchasesRoutes from './purchases.routes.js';
 import expensesRoutes from './expenses.routes.js';
+import employeesRoutes from './employees.routes.js';
 
 const router = express.Router();
 
@@ -29,5 +30,6 @@ router.use('/vendors', vendorsRoutes);
 router.use('/purchases', purchasesRoutes);
 router.use('/expenses', expensesRoutes);
 router.use('/investments', expensesRoutes);
+router.use('/employees', employeesRoutes);
 
 export default router;

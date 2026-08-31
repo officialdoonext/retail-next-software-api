@@ -9,6 +9,8 @@ import customersRoutes from './customers.routes.js';
 import ordersRoutes from './orders.routes.js';
 import uploadRoutes from './upload.routes.js';
 import salesRoutes from './sales.routes.js';
+import vendorsRoutes from './vendors.routes.js';
+import purchasesRoutes from './purchases.routes.js';
 
 const router = express.Router();
 
@@ -22,5 +24,7 @@ router.use('/customers', customersRoutes);
 router.use('/orders', ordersRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/sales', salesRoutes);
+router.use('/vendors', vendorsRoutes);
+router.use('/purchases', purchasesRoutes);
 
 export default router;

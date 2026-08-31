@@ -81,7 +81,22 @@ export const createEmployee = async (req, res) => {
     }
 
     const cleanPhone = String(phone).replace(/\D/g, '').slice(-10);
-    const empId = req.body.id || ('emp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6));
+    
+    // Generate unique 7-digit numeric ID (1000000 to 9999999)
+    let empId = req.body.id;
+    if (!empId || !/^\d{7}$/.test(String(empId))) {
+      let isUnique = false;
+      while (!isUnique) {
+        const rand7 = Math.floor(1000000 + Math.random() * 9000000).toString();
+        const existingDoc = await db.collection('employees').doc(rand7).get();
+        if (!existingDoc.exists) {
+          empId = rand7;
+          isUnique = true;
+        }
+      }
+    } else {
+      empId = String(empId);
+    }
 
     const newEmployee = {
       id: empId,

@@ -109,7 +109,7 @@ export const createSale = async (req, res) => {
     const collectionName = isDraft ? 'draft_invoices' : 'sales';
     await db.collection(collectionName).doc(saleId).set(saleDoc);
 
-    // If settled sale, decrease stock in Firestore products
+    // If settled sale, decrease stock in Firestore products AND decrease rack item counts
     if (!isDraft) {
       const batch = db.batch();
       for (const item of items) {
@@ -123,6 +123,41 @@ export const createSale = async (req, res) => {
               stock: newStock,
               status: newStock > 0 ? 'Active' : 'Out of Stock'
             });
+          }
+
+          // Decrement from store rack holding this item
+          try {
+            const rackSnaps = await db.collection('store_racks')
+              .where('businessId', '==', businessId)
+              .get();
+
+            let remainingToDeduct = Number(item.qty) || 1;
+            rackSnaps.forEach(rDoc => {
+              if (remainingToDeduct <= 0) return;
+              const rData = rDoc.data();
+              const rItems = [...(rData.items || [])];
+              let modified = false;
+
+              for (let i = 0; i < rItems.length; i++) {
+                if (rItems[i].productId === item.id || rItems[i].id === item.id) {
+                  const currQty = Number(rItems[i].quantity) || 0;
+                  if (currQty > 0) {
+                    const deduct = Math.min(currQty, remainingToDeduct);
+                    rItems[i].quantity = currQty - deduct;
+                    remainingToDeduct -= deduct;
+                    modified = true;
+                  }
+                }
+              }
+
+              if (modified) {
+                // Filter out 0 qty items or keep updated count
+                const cleanedItems = rItems.filter(it => it.quantity > 0);
+                batch.update(rDoc.ref, { items: cleanedItems, updatedAt: new Date().toISOString() });
+              }
+            });
+          } catch (rErr) {
+            console.warn('Rack stock sync warning:', rErr.message);
           }
         }
       }

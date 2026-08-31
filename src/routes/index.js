@@ -13,6 +13,8 @@ import vendorsRoutes from './vendors.routes.js';
 import purchasesRoutes from './purchases.routes.js';
 import expensesRoutes from './expenses.routes.js';
 import employeesRoutes from './employees.routes.js';
+import storeRacksRoutes from './storeRacks.routes.js';
+import godownSlotsRoutes from './godownSlots.routes.js';
 
 const router = express.Router();
 
@@ -31,5 +33,7 @@ router.use('/purchases', purchasesRoutes);
 router.use('/expenses', expensesRoutes);
 router.use('/investments', expensesRoutes);
 router.use('/employees', employeesRoutes);
+router.use('/store-racks', storeRacksRoutes);
+router.use('/godown-slots', godownSlotsRoutes);
 
 export default router;
